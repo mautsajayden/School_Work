@@ -87,108 +87,156 @@ Email: jmautsa1@umbc.edu
 Description: This program runs a dice-based instruction game.
 """
 
+ADD = "add"
+MUL = "mul"
+SUB = "sub"
+NO_OP = "nop"
+JMP =  "jmp"
+HLT = "hlt"
+
 def ask_user():
     """
-    Asks the user for the board size and seed.
-    return:  seed, size
+    :prompt: Asks the user to enter the board size and seed
+    :return: the seed and size as integers to use for generating the map.
     """
     size_seed = input("Board Size and Seed: ")
 
     parts = size_seed.split()
 
     size = int(parts[0])
- 
+
     seed = int(parts[1])
 
     return seed, size
 
+
 def value(instr_word):
     """
-    get the integer value from a string like.
-    :param instr_word: str, containing a number
-    :return: int, the extracted number
+    :param instr_word: a string that includes a number
+    :return: the integer number taken from the string
     """
+    #splits the word to get the integer 
     word = instr_word.split()
 
     num = int(word[1])
+    
+    return num
 
-    return  num
 
-def jump_instruction(position, message, map_size):
+def jump_instruction(position, message, map_size, score, roll, game_map):
     """
-    Handles the JMP command.
-    :param position: int, current position
-    :param message: str, the "jmp X" instruction
-    :param map_size: int, total size of the board
-    :return: int, new position after jump
-    """
-    position = value(message)  
-
-    if position < map_size:
-        return position
-    else:
-        # if jump target is larger than map jump back
-        return (position + roll_dice()) % map_size
-
-def instructions(message, position, score, roll, map_size):
-    """
-    Executes the command at the current position and returns updated state.
-    :param message: str, current instruction
-    :param position: int, current position
-    :param score: int, current score
-    :param map_size: int, board size
-    :return: (position, score, finished)
+    :param position: the current position of the player on the board
+    :param message: the instruction that contains the jump command 
+    :param map_size: the total number of squares on the board
+    :param score: the players current score before jumping
+    :param roll: the dice value from the current turn
+    :param game_map: the list that holds all the boards instructions
+    :return: the new position, score, roll, and finished status after the jump is done
     """
 
-    roll = roll_dice() 
+    # Jump to the new position
+    position = value(message) 
 
-    if((position + roll)>map_size):position = (position + roll) % map_size
-    else : position +=roll
+    # Get instruction at the jump location
+    next_message = game_map[position]  
+    
+    position, score, roll, finished = instructions(next_message, position, score, roll, map_size, game_map)
 
-    if "add" in message:
+    return position, score, roll, finished
+
+
+def control_position(position, map_size, roll):
+    """
+    :param position: the current position on the board before moving
+    :param map_size: the total length of the board
+    :param roll: the dice value used to move forward
+    :return: the new position after moving. Wraps around if the move goes past the board size
+    """
+    #check if position is off bound 
+    if (position + roll) >= map_size: position = (position + roll) % map_size
+
+    else:position += roll
+
+    return position
+
+def instructions(message, position, score, roll, map_size, game_map):
+
+    """"
+    :param message: the instruction currently being executed
+    :param position: the players position on the board before executing the instruction
+    :param score: the players current score
+    :param roll: the dice value used for this move
+    :param map_size: the size of the map to control movement and wrapping
+    :param game_map: the list that holds all board instructions
+    :return: updated position, score, roll, and finished 
+    """
+    roll = roll_dice()
+
+    #adds the score & the runs the positin 
+    if ADD in message:
+
         score += value(message)
 
-    elif "sub" in message:
+        position = control_position(position, map_size, roll)
+
+    #sub the score & the runs the positin 
+    elif SUB in message:
+
         score -= value(message)
 
-    elif "mul" in message:
+        position = control_position(position, map_size, roll)
+
+    #multiplies the score & the runs the positin 
+    elif MUL in message:
         score *= value(message)
 
-    elif "jmp" in message:
-        position = jump_instruction(position, message, map_size)
-        return position, score, roll, False
+        position = control_position(position, map_size, roll)
 
-    elif "hlt" in message:
+    #nop just changes the position  
+    elif (NO_OP in message):
+
+        position = control_position(position, map_size, roll)
+
+    #jumps to the next position 
+    elif JMP in message:
+
+        position, score, roll, finished = jump_instruction(position, message, map_size, score, roll, game_map)
+
+        return position, score, roll, finished
+
+    #stops game when posiotion on map is HLT
+    elif HLT in message:
         print(f"Final Pos: {position} Final Score: {score}, Instruction {message}")
-        return position, score, roll, True
+        yes_no = input("Would you like to play again Y or N: ").lower()
+        if "y" in yes_no:
+            main()
+        else:
+            return position, score, roll, True
 
     return position, score, roll, False
 
-
-
+#displays the map
 def display_grid(the_grid):
     """
-    Displays the 2D game grid.
-    :par
-     Display grid
-     """
-
+    :param the_grid: the grid that was created using make_grid.
+    :return: prints the full grid to the screen in a formatted layout.
+    """
+    
     for row in the_grid:
         print(''.join(row))
 
-
+#plays the game
 def play_game(game_map):
     """
-    Main game loop. Runs until the game ends via 'hlt'.
-    :param game_map: list of str, instructions
+    :param game_map: the list of instructions created by generate_random_map.
+    :return: runs the main gameplay loop, handling dice rolls, moves, and commands until the game ends.
     """
     seed_num, map_size = ask_user()
+    random.seed(seed_num)
 
     game_map = generate_random_map(map_size, seed_num)
 
-    # makes the grid 
     the_grid = make_grid(map_size)
-
     for index in range(map_size):
         fill_grid_square(the_grid, map_size, index, game_map[index])
 
@@ -201,16 +249,22 @@ def play_game(game_map):
 
     while not finished:
         command = game_map[position]
-
-        position, score, roll, finished = instructions(command, position, score, roll, map_size)
+        position, score, roll, finished = instructions(command, position, score, roll, map_size, game_map)
         print("Pos:", position, "Score:", score, ", Instruction:", command, "Rolled:", roll)
 
     if not finished:
         print(f"Final Pos: {position} Final Score: {score}, Instruction {game_map[position]}")
 
+def main():
+    """
+    :purpose: starts the JMPs and HLTs game and controls the overall program flow.
+    :return: none.
+    """
 
-if __name__ == "__main__":
-    
     message = []
 
     play_game(message)
+
+if __name__ == "__main__":
+    main()
+
