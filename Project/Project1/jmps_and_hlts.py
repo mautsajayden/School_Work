@@ -1,6 +1,6 @@
 """
     Come up with a name for the game
-
+    nop-jump-mathetics game
     JMPs and HLTs
 """
 
@@ -84,6 +84,7 @@ File: game_logic.py
 Author: Jayden Mautsa
 Date: October 24, 2025
 Email: jmautsa1@umbc.edu
+Project : 1 
 Description: This program runs a dice-based instruction game.
 """
 
@@ -97,7 +98,11 @@ HLT = "hlt"
 def ask_user():
     """
     :prompt: Asks the user to enter the board size and seed
+<<<<<<< HEAD
     :return: the seed and size as integers to use for generating the map.
+=======
+    :return: the seed and size as integers to use for generating the map
+>>>>>>> 2d97ead326870d3ffb8791f1c55c5e7f8f949e29
     """
     size_seed = input("Board Size and Seed: ")
 
@@ -218,8 +223,13 @@ def instructions(message, position, score, roll, map_size, game_map):
 #displays the map
 def display_grid(the_grid):
     """
+<<<<<<< HEAD
     :param the_grid: the grid that was created using make_grid.
     :return: prints the full grid to the screen in a formatted layout.
+=======
+    :param the_grid: the grid that was created using make_grid
+    :return: prints the full grid to the screen in a formatted layout
+>>>>>>> 2d97ead326870d3ffb8791f1c55c5e7f8f949e29
     """
     
     for row in the_grid:
@@ -228,8 +238,13 @@ def display_grid(the_grid):
 #plays the game
 def play_game(game_map):
     """
+<<<<<<< HEAD
     :param game_map: the list of instructions created by generate_random_map.
     :return: runs the main gameplay loop, handling dice rolls, moves, and commands until the game ends.
+=======
+    :param game_map: the list of instructions created by generate_random_map
+    :return: runs the main gameplay loop, handling dice rolls, moves, and commands until the game ends
+>>>>>>> 2d97ead326870d3ffb8791f1c55c5e7f8f949e29
     """
     seed_num, map_size = ask_user()
     random.seed(seed_num)
@@ -237,6 +252,10 @@ def play_game(game_map):
     game_map = generate_random_map(map_size, seed_num)
 
     the_grid = make_grid(map_size)
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 2d97ead326870d3ffb8791f1c55c5e7f8f949e29
     for index in range(map_size):
         fill_grid_square(the_grid, map_size, index, game_map[index])
 
@@ -257,6 +276,7 @@ def play_game(game_map):
 
 def main():
     """
+<<<<<<< HEAD
     :purpose: starts the JMPs and HLTs game and controls the overall program flow.
     :return: none.
     """
@@ -268,3 +288,22 @@ def main():
 if __name__ == "__main__":
     main()
 
+=======
+    :purpose: starts the JMPs and HLTs game and controls the overall program flow
+    :return: none.
+    """
+    yes_no = "y"
+
+    while yes_no == "y":
+        
+        message = []
+
+        play_game(message)
+
+        yes_no = input("Would you like to play again Y or N: ").lower()
+
+    
+if __name__ == "__main__":
+    main()
+
+>>>>>>> 2d97ead326870d3ffb8791f1c55c5e7f8f949e29
