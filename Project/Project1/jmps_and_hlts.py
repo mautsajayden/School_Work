@@ -234,6 +234,7 @@ def play_game(game_map):
     game_map = generate_random_map(map_size, seed_num)
 
     the_grid = make_grid(map_size)
+    
     for index in range(map_size):
         fill_grid_square(the_grid, map_size, index, game_map[index])
 
