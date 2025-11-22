@@ -1,6 +1,7 @@
 import random
 
 EMPTY_CELL = " "
+NUM_2 = 2
 
 ASSASSIN = 'A'
 SAPPER = 'S'
@@ -17,9 +18,9 @@ def tactego(pieces_file, length, width):
 #-----------------------------------------------------------
 # Function: tactego
 # Parameters:
-#   pieces_file (str) – name of the file containing blue and red piece setups
-#   length (int) – number of rows in the game grid
-#   width  (int) – number of columns in the game grid
+#   pieces_file  – name of the file containing blue and red piece setups
+#   length  – number of rows in the game grid
+#   width   – number of columns in the game grid
 # Returns: None
 # Description:
 #   Main game function. Reads the pieces file, builds the game board,
@@ -63,7 +64,7 @@ def tactego(pieces_file, length, width):
             if not validate_position(start, end):
                 valid_move = F
             else:
-                start_length, start_width, end_length, end_width = start_end_index(start, end, grid_table)
+                start_length, start_width, end_length, end_width = start_end_index(start, end)
                 # checks if is inside board
                 in_bounds = (0 <= start_length < length and 0 <= start_width < width and 0 <= end_length < length and 0 <= end_width < width)
 
@@ -95,53 +96,60 @@ def tactego(pieces_file, length, width):
                                 else:
                                     valid_move = T
 
-        # Execute the move / combat 
-        isMove, red_flags, blue_flags, grid_table, winner = move_rules(False, start_value, end_value, current, red_flags, blue_flags,start_length, start_width, end_length, end_width, grid_table)
+        # combat begins
+        isMove, red_flags, blue_flags, grid_table, winner = combat_move_rules(False, start_value, end_value, current, red_flags, blue_flags,start_length, start_width, end_length, end_width, grid_table)
 
         # If winner found, announce and break out
         if winner == RED_PIECE:
             display_grid(grid_table, length, width)
             print("R has won the game")
-            return
+            return 
         if winner == BLUE_PIECE:
             display_grid(grid_table, length, width)
             print("B has won the game")
-            return
+            return 
 
         # Alternate turn
         current = alternate_turn(current)
-
-    # If loop exits naturally 
-    if blue_flags == 0:
-        display_grid(grid_table, length, width)
-        print("R has won the game")
-    elif red_flags == 0:
-        display_grid(grid_table, length, width)
-        print("B has won the game")
-
+ 
 #----Get the file name with the pieces----
 def filename_pieces(name_file):
-
+#-----------------------------------------------------------
+# Function: filename_pieces
+# Parameters:
+#   name_file string – name of the file that contains pieces
+#
+# Returns:
+#   blue_pieces list – list representing blue player's pieces
+#   red_pieces list  – lisT  representing red player's pieces
+#
+# Description:
+#   Opens and reads the pieces file. Extracts, validates, and stores all
+#   piece types and positions for both red and blue sides.
+#-----------------------------------------------------------
     file_pieces = []
     blue_pieces = []
     red_pieces = []
     piece_power = []
     num_piece = []
     
+    #gets pieces from the file 
     with open(name_file) as file:
         for f in file:
             file_pieces.append(f)
-        
+    #gets the piece power and piece symbol 
     for line in file_pieces:
         piece = line.split()
         piece_power.append(piece[0])
         num_piece.append(int(piece[1]))
     
+    #creates the pieces for R and B 
     for i in range(len(num_piece)):
         for j in range(num_piece[i]):
             red_pieces.append('R' + piece_power[i])
             blue_pieces.append('B' + piece_power[i])
-            
+
+    #shuffles the red then blue       
     random.shuffle(red_pieces) 
     random.shuffle(blue_pieces)
                     
@@ -149,7 +157,21 @@ def filename_pieces(name_file):
 
 #----Create the board and the pieces, and place them onto the board randomly as specified here----
 def make_grid(length, width, blue_pieces, red_pieces):
-
+#-----------------------------------------------------------
+# Function: make_grid
+# Parameters:
+#   length  – rows of the board
+#   width   – columns of the board
+#   blue_pieces  – list of blue pieces and locations
+#   red_pieces   – list of red pieces and locations
+# Returns:
+#   grid_table (2D list)   grid with all pieces placed
+#   red_flags   – number of red flags on the board
+#   blue_flags – number of blue flags on the board
+# Description:
+#   Creates a 2D grid used for the Tactego board, fills it with EMPTY_CELL,
+#   and places all red and blue pieces red up and blue bottom.
+#-----------------------------------------------------------
     #makes an empty 2D grid table 
     grid_table = []
     for j in range(length):
@@ -158,7 +180,7 @@ def make_grid(length, width, blue_pieces, red_pieces):
             row.append(EMPTY_CELL)
         grid_table.append(row)
 
-    # place red pieces in top half
+    # place red pieces in top 
     index_R = 0
     R_flags = 0
 
@@ -166,11 +188,11 @@ def make_grid(length, width, blue_pieces, red_pieces):
         for j in range(width):
             if index_R < len(red_pieces):
                 grid_table[i][j] = red_pieces[index_R]
-                if len(red_pieces[index_R]) >= 2 and red_pieces[index_R][1] == FLAG:
+                if len(red_pieces[index_R]) >= NUM_2 and red_pieces[index_R][1] == FLAG:
                     R_flags += 1
                 index_R += 1
 
-    #  place blue pieces in bottom half
+    #  place blue pieces in bottom 
     index_blue = 0
     B_flags = 0
 
@@ -178,7 +200,7 @@ def make_grid(length, width, blue_pieces, red_pieces):
         for j in range(width):
             if index_blue < len(blue_pieces):
                 grid_table[i][j] = blue_pieces[index_blue]
-                if len(blue_pieces[index_blue]) >= 2 and blue_pieces[index_blue][1] == FLAG:
+                if len(blue_pieces[index_blue]) >= NUM_2 and blue_pieces[index_blue][1] == FLAG:
                     B_flags += 1
                 index_blue += 1
 
@@ -186,99 +208,210 @@ def make_grid(length, width, blue_pieces, red_pieces):
 
 #Draw the board
 def display_grid(grid_table, length, width):
+#-----------------------------------------------------------
+# Function: display_grid
+# Parameters:
+#   grid_table  – 2D list representing the current board
+#   length  – number of rows in the grid
+#   width   – number of columns in the grid
+# Returns: nothing
+#-------------------------------------------------------
+
     # Print header indices
     print("    ", end="")
     for j in range(width):
-        # match sample spacing a bit
         print(f"{j}", end="   ")
     print()
     for i in range(length):
         print(f"  {i}", end=" ")
         for j in range(width):
-            cell = grid_table[i][j]
-            # ensure empty cell prints as spaces
-            if cell == EMPTY_CELL:
+            n = grid_table[i][j]
+            if n == EMPTY_CELL:
                 print("   ", end=" ")
             else:
-                print(f"{cell}", end=" ")
+                print(f"{n}", end=" ")
         print()
 
 #Get the player's move.
 def enter_moves(current):
 
+#-----------------------------------------------------------
+# Function: enter_moves
+# Parameters:
+#   current – the current player ('R' or 'B')
+# Returns:
+#   start_pos  – input string for the piece's starting position
+#   move_pos   – input string for the desired ending position
+# Description:
+#   Prompts the current player to enter the coordinates of a piece
+#   they want to move and where they want to move it. Does not validate.
+#-----------------------------------------------------------
+
     print("Current Turn is : ", current)
     start_pos = input("Select Piece to Move by Position >> ")
-    move_pos = input("Select Position to move Piece >> ")
+    end_pos = input("Select Position to move Piece >> ")
 
-    return start_pos, move_pos
+    return start_pos, end_pos
 
-#re-look
 def validate_position(start, end):
-
+#-----------------------------------------------------------
+# Function: validate_position
+# Parameters:
+#   start  – starting position input string
+#   end    – ending position input string
+# Returns:
+#   True if both start and end positions are valid num coordinates
+#   with exactly two values; otherwise False.
+# Description:
+#   Checks whether both coordinate strings are formatted correctly,
+#   contain exactly two values, and both values are digits.
+#-----------------------------------------------------------
     pos = start.strip().split()
-    if len(pos) != 2:
+
+    if len(pos) != NUM_2:
         print("Thers is no space between your cordinates")
-        return False
+        return F
 
     if not pos[0].isdigit() or not pos[1].isdigit():
         print("Thers is not a number between your cordinates")
-        return False
+        return F
 
     pos2 = end.strip().split()
-    if len(pos2) != 2:
+    if len(pos2) != NUM_2:
         print("Thers is no space between your cordinates")
-        return False
+        return F
 
     if not pos2[0].isdigit() or not pos2[1].isdigit():
         print("Thers is not a number between your cordinates")
-        return False
+        return F
 
-    return True
+    return T
 
 
-def start_end_index(start, end, grid_table):
-    
+def start_end_index(start, end):
+#-----------------------------------------------------------
+# Function: start_end_index
+# Parameters:
+#   start  – starting coordinate 
+#   end    – ending coordinate 
+#   grid_table  – game board 
+# Returns:
+#   start_row (int), start_col (int), end_row (int), end_col (int)
+# Description:
+#   Converts start/end coordinate strings into integer indices
+#   used for indexing into the grid.
+#-----------------------------------------------------------
     s = start.split()
     e = end.split()
+
     return int(s[0]), int(s[1]), int(e[0]), int(e[1])
 
 
 def start_end_value(start_length, start_width, end_length, end_width, grid_table):
+#-----------------------------------------------------------
+# Function: start_end_value
+# Parameters:
+#   start_length , start_width  starting cell coordinates
+#   end_length   , end_width    ending cell coordinates
+#   grid_table  – 2D board
+# Returns:
+#   start_value  – piece at the start location
+#   end_value    – piece at the end location
+# Description:
+#   Retrieves the board values located at the chosen start
+#   and end positions.
+#-----------------------------------------------------------
     return grid_table[start_length][start_width], grid_table[end_length][end_width]
 
 
 def alternate_turn(current):
+#-----------------------------------------------------------
+# Function: alternate_turn
+# Parameters:
+#   current  – current player symbol R or  B
+# Returns: current 
+# Description:
+#   Switches the active player after a turn ends.
+#-----------------------------------------------------------
+
     if current == RED_PIECE:
         return BLUE_PIECE
+    
     return RED_PIECE
 
 
 def validate_turn(start_val, current_player):
-    # start_val must be a piece belonging to current_player and not a flag and not EMPTY
+#-----------------------------------------------------------
+# Function: validate_turn
+# Parameters:
+#   start_val  – piece selected by the player
+#   current_player  – 'R' or 'B'
+# Returns:
+#   True if the piece belongs to the current player and is movable.
+#   Returns F (False) if the piece is empty or a flag.
+# Description:
+#   Ensures the selected piece belongs to the current player,
+#   is not an EMPTY_CELL, and is not a FLAG 
+#-----------------------------------------------------------
+
     if start_val == EMPTY_CELL:
         return F
     # flag cannot move
     if len(start_val) >= 2 and start_val[1] == FLAG:
         return F
+    
     piece_owner = start_val[0]
+
     return piece_owner == current_player
 
 
 def switch_position(grid_table, start_length, start_width, end_length, end_width):
+#-----------------------------------------------------------
+# Function: switch_position
+# Parameters:
+#   grid_table  – game board
+#   start_length  ,start_width  – old position
+#   end_length, end_width    – new position
+# Returns:
+#   grid_table  – updated board
+# Description:
+#   Moves a piece from its start position to the end position
+#   and replaces the start position with EMPTY_CELL.
+#-----------------------------------------------------------
     grid_table[end_length][end_width] = grid_table[start_length][start_width]
     grid_table[start_length][start_width] = EMPTY_CELL
+
     return grid_table
 
+def combat_move_rules(isMove, start_value, end_value, current, red_flag, blue_flag,start_length, start_width, end_length, end_width, grid_table):
+#-----------------------------------------------------------
+# Function: move_rules
+# Parameters:
+#   isMove  – indicates if movement was valid before combat
+#   start_value  – attacking piece
+#   end_value    – defending piece
+#   current  – current player R or B
+#   red_flag  – remaining red flags
+#   blue_flag  – remaining blue flags
+#   start_length , start_width – start coords
+#   end_length   , end_width    – end coords
+#   grid_table  – game grid
+# Returns:
+#
+#   winner = R, B, or None
+# Description:
+#    movement and combat rules
+#     - simple moves into empty cells high low power
+#     - capturing flags
+#     - mine/sapper 
+#     - assassin rules
+#     - sapper combat behavior
+#     - numeric piece combat 
+#-----------------------------------------------------------
 
-def move_rules(isMove, start_value, end_value, current, red_flag, blue_flag,start_length, start_width, end_length, end_width, grid_table):
-    """
-    Perform the move and apply combat rules (including extra-credit A/S/M).
-    Returns tuple: (isMove, red_flag, blue_flag, grid_table, winner)
-    winner is 'R' or 'B' or None.
-    """
     winner = None
 
-    # tokens after first character (color)
+    #  after first character 
     start_symble = EMPTY_CELL
     if len(start_value) > 1:
         start_symble = start_value[1:]
@@ -287,98 +420,96 @@ def move_rules(isMove, start_value, end_value, current, red_flag, blue_flag,star
     if end_value != EMPTY_CELL and len(end_value) > 1:
         end_symbol = end_value[1:]
 
-    # If moving into empty cell: simple move
     if end_value == EMPTY_CELL:
         grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
-        return True, red_flag, blue_flag, grid_table, None
+        return T, red_flag, blue_flag, grid_table, None
 
-    # If moving into a flag -> capture flag
+    #  attacking a  flag
     if end_symbol == FLAG:
-        # attacker current captures defender's flag
+        # attacker current defender's flag
         if end_value[0] == RED_PIECE:
-            # captured a red flag
+            # attacking red flag
             red_flag -= 1
             grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
             if red_flag == 0:
                 winner = BLUE_PIECE
         else:
-            # captured a blue flag
+            # attacking a blue flag
             blue_flag -= 1
             grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
             if blue_flag == 0:
                 winner = RED_PIECE
-        return True, red_flag, blue_flag, grid_table, winner
+        return T, red_flag, blue_flag, grid_table, winner
 
-    # Now handle extra-credit pieces and mines/sapper/assassin interactions
+    #extra-credit pieces and mines/sapper/assassin 
 
-    # If defender is a mine
+    #  defender is a mine
     if end_symbol == MINE:
         # Sapper attacking mine: sapper disarms mine and moves into cell
         if start_symble == SAPPER:
-            # mine removed, sapper moves into mine cell
+            # mine removed
             grid_table[end_length][end_width] = grid_table[start_length][start_width]
             grid_table[start_length][start_width] = EMPTY_CELL
-            return True, red_flag, blue_flag, grid_table, None
+            return T, red_flag, blue_flag, grid_table, None
         else:
-            # any other attacker (including assassin) gets defeated; mine is removed afterwards
-            grid_table[start_length][start_width] = EMPTY_CELL  # attacker removed
-            grid_table[end_length][end_width] = EMPTY_CELL    # mine removed
-            return True, red_flag, blue_flag, grid_table, None
+            # any other attacker gets defeated
+            grid_table[start_length][start_width] = EMPTY_CELL  
+            grid_table[end_length][end_width] = EMPTY_CELL   
+            return T, red_flag, blue_flag, grid_table, None
 
-    # If attacker is assassin
+    #  attacker is assassin
     if start_symble == ASSASSIN:
-        # Assassin attacking any non-mine piece defeats it
         grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
-        return True, red_flag, blue_flag, grid_table, None
+        return T, red_flag, blue_flag, grid_table, None
 
-    # If defender is assassin (attacker attacking an assassin): assassin loses if attacked
+    # assassin vs assasin
     if end_symbol == ASSASSIN:
-        # attacker loses, defender (assassin) stays
         grid_table[start_length][start_width] = EMPTY_CELL
-        return True, red_flag, blue_flag, grid_table, None
+        return T, red_flag, blue_flag, grid_table, None
 
-    # Sapper vs Sapper: attacker wins (treat as equal numeric -> attacker wins)
     if start_symble == SAPPER and end_symbol == SAPPER:
         grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
-        return True, red_flag, blue_flag, grid_table, None
+        return T, red_flag, blue_flag, grid_table, None
 
-    # If either is Sapper (and not handled above)
     if start_symble == SAPPER and end_symbol != MINE:
-        # sapper attacks non-mine non-sapper: sapper has strength 0 so loses against any numeric defender
-        # but project text says "it will be defeated by any piece if it is attacked" (meaning when sapper is defender).
-        # When sapper attacks a numeric piece, regular strength rules apply; sapper has strength 0 -> will lose unless defender also 0 or special
-        # So treat sapper as strength 0
-        try_parse_start = start_symble
-        # start_strength = 0
-        # determine defender numeric strength if any
+       
         if end_symbol.isdigit():
-            # sapper (0) vs numeric -> sapper loses
             grid_table[start_length][start_width] = EMPTY_CELL
-            return True, red_flag, blue_flag, grid_table, None
+            return T, red_flag, blue_flag, grid_table, None
         else:
-            # defender is non-numeric (shouldn't occur here), fallback to switching
             grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
-            return True, red_flag, blue_flag, grid_table, None
+            return T, red_flag, blue_flag, grid_table, None
 
-    # If defender is Sapper and attacker is numeric (not S)
     if end_symbol == SAPPER and start_symble.isdigit():
         # any piece attacking a sapper defeats it
         grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
-        return True, red_flag, blue_flag, grid_table, None
+        return T, red_flag, blue_flag, grid_table, None
 
-    # At this point both are numeric pieces (normal combat)
     if start_symble.isdigit() and end_symbol.isdigit():
         if int(start_symble) >= int(end_symbol):
             grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
         else:
             # attacker loses
             grid_table[start_length][start_width] = EMPTY_CELL
-        return True, red_flag, blue_flag, grid_table, None
+        return T, red_flag, blue_flag, grid_table, None
 
-    # Catch-all fallback: perform a simple switch
     grid_table = switch_position(grid_table, start_length, start_width, end_length, end_width)
-    return True, red_flag, blue_flag, grid_table, None
+    return T, red_flag, blue_flag, grid_table, None
 
 if __name__ == '__main__':
-    random.seed(input('What is seed? '))
-    tactego("small_game.pieces", 6, 4)
+
+    isplay = 'yes'
+
+    while  isplay.lower() == 'yes' :
+
+        random.seed(input('What is seed? '))
+        file_name = input('What is the filename for the pieces? ')
+        length = int(input('What is the length? '))
+        width = int(input('What is the width? '))
+        tactego(file_name, length, width)
+        print()
+        print()
+        isplay = input('Do you want to play again no or yes: ')
+    
+            
+   
